@@ -10,3 +10,4 @@ unstructured # And its dependencies (like libmagic if on linux)
 html2text # Often needed by UnstructuredHTMLLoader
 python-dotenv # Still useful for dev or optional config
 requests # May not be needed anymore if api_utils is fully removed
+pysqlite3-binary
