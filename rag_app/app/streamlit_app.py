@@ -1,5 +1,18 @@
 # rag_app/app/streamlit_app.py
 
+# --- SQLite Patch for ChromaDB ---
+# This MUST be run before chromadb is imported.
+try:
+    __import__('pysqlite3')
+    import sys
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+    print("[SQLite Patch] Successfully patched sqlite3 with pysqlite3.")
+except ImportError:
+    print("[SQLite Patch] pysqlite3-binary not found, defaulting to system sqlite3. ChromaDB might fail.")
+except Exception as e:
+    print(f"[SQLite Patch] Error patching sqlite3: {e}")
+# --- End SQLite Patch ---
+
 import streamlit as st
 import sys
 import os
