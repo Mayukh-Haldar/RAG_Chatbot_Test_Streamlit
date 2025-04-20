@@ -168,21 +168,28 @@ def load_and_split_document(file_path: str) -> List[Document]:
 
 
 def index_document_to_chroma(file_path: str, file_id: int, nomic_api_key: str) -> bool:
+    # 1. GET EMBEDDING FUNCTION / VECTORSTORE (SHOULD BE CACHED & OK NOW)
     emb_func = get_embedding_function(
         nomic_api_key, NOMIC_MODEL_NAME, NOMIC_DIMENSIONALITY)
     vs = get_vector_store(emb_func)
     if not vs:
+        # Should not happen if init was ok
         logger.error(
             "Cannot index document: Vectorstore not initialized/retrieved.")
         return False
+
     try:
         logger.info(
             f"Starting indexing process for file: {file_path}, file_id: {file_id}")
+
+        # 2. LOAD AND SPLIT (POTENTIAL FAILURE POINT A)
         splits = load_and_split_document(file_path)
-        if not splits:
+        if not splits:  # Check if load_and_split had an error and returned []
             logger.error(
                 f"No content generated from splitting {file_path}. Indexing aborted.")
-            return False
+            return False  # Return False as indexing didn't happen
+
+        # 3. PREPARE METADATA (Usually safe)
         file_id_str = str(file_id)
         docs_to_add = []
         for split in splits:
@@ -193,18 +200,25 @@ def index_document_to_chroma(file_path: str, file_id: int, nomic_api_key: str) -
             logger.warning(
                 f"No document splits generated for file_id {file_id_str}. Nothing to index.")
             return False
+
         logger.info(
             f"Adding {len(docs_to_add)} document chunks with file_id {file_id_str} to Chroma...")
+
+        # 4. ADD DOCUMENTS TO CHROMA (POTENTIAL FAILURE POINT B - API CALL)
+        # --->>> THIS IS WHERE THE NOMIC EMBEDDING API CALL HAPPENS <<<---
         vs.add_documents(docs_to_add)
+        # --->>> ---------------------------------------------- <<<---
         logger.info(
             f"Successfully added {len(docs_to_add)} chunks for file_id {file_id_str} to Chroma.")
         return True
-    except Exception as e:
+
+    except Exception as e:  # Catch errors during load/split or add_documents
         error_details = CustomException(e, sys)
+        # Errors here might relate to Nomic API key validity, usage limits, PDF processing etc.
         logger.error(
             f"Error indexing document {file_path} (file_id: {file_id}): {error_details}", exc_info=True)
-        st.error(f"Indexing failed: {e}")
-        return False
+        st.error(f"Indexing failed: {e}")  # Show specific error in UI
+        return False  # Explicitly return False on any exception during the process
 
 
 def delete_doc_from_chroma(file_id: int, nomic_api_key: str) -> bool:
