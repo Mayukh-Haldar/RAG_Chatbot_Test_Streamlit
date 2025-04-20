@@ -17,24 +17,57 @@ def _initialize_database():
     """Creates the database directory and tables if they don't exist."""
     global _db_initialized
     if _db_initialized:
+        logger.debug("Database already initialized, skipping.")
         return
     try:
         logger.info(f"Ensuring database directory exists: {DB_DIR}")
         os.makedirs(DB_DIR, exist_ok=True)
         logger.info(f"Database path set to: {DB_PATH}")
-        with get_db_connection() as conn:
+
+        with get_db_connection() as conn:  # Use the connection function
             logger.info(
                 "Initializing database tables (if they don't exist)...")
-            conn.execute(
-                '''CREATE TABLE IF NOT EXISTS application_logs (...)''')  # Keep schema
-            conn.execute(
-                '''CREATE TABLE IF NOT EXISTS document_store (...)''')  # Keep schema
+
+            # --- EXECUTE CORRECT SQL ---
+            conn.execute('''CREATE TABLE IF NOT EXISTS application_logs (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                session_id TEXT,
+                                user_query TEXT,
+                                gpt_response TEXT,
+                                model TEXT,
+                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                           )''')
+            logger.debug(
+                "Executed CREATE TABLE IF NOT EXISTS for application_logs.")
+
+            conn.execute('''CREATE TABLE IF NOT EXISTS document_store (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                filename TEXT UNIQUE,
+                                upload_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                           )''')
+            logger.debug(
+                "Executed CREATE TABLE IF NOT EXISTS for document_store.")
+            # --- END CORRECT SQL ---
+
             logger.info("Database tables initialization complete.")
-            _db_initialized = True  # Mark as initialized
+            _db_initialized = True  # Mark as initialized ONLY if successful
+
+    except sqlite3.Error as e:
+        logger.critical(
+            f"Database initialization failed during SQL execution: {e}", exc_info=True)
+        # Don't set _db_initialized = True if it fails
+        raise RuntimeError(
+            f"Failed to initialize database tables at {DB_PATH}") from e
+    except OSError as e:
+        logger.critical(
+            f"Failed to create database directory {DB_DIR}: {e}", exc_info=True)
+        raise RuntimeError(
+            f"Failed to create database directory {DB_DIR}") from e
     except Exception as e:
-        logger.critical(f"Database initialization failed: {e}", exc_info=True)
-        # In Streamlit, raising might stop the app, maybe log and continue cautiously
-        # raise RuntimeError(f"Failed to initialize database: {e}") from e
+        logger.critical(
+            f"Unexpected error during database initialization: {e}", exc_info=True)
+        raise RuntimeError(
+            "Unexpected error during database initialization") from e
 
 
 def get_db_connection():
