@@ -9,7 +9,6 @@ env/
 logs/
 **/chroma_db
 **/*.db
-temp_uploads/
 
 # Python cache
 **/__pycache__/
