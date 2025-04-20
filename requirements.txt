@@ -1,0 +1,12 @@
+streamlit
+langchain
+langchain-nomic # Changed from langchain-google-genai
+langchain-groq
+langchain-chroma
+langchain-community # For loaders/splitters if not covered elsewhere
+pypdf
+docx2txt
+unstructured # And its dependencies (like libmagic if on linux)
+html2text # Often needed by UnstructuredHTMLLoader
+python-dotenv # Still useful for dev or optional config
+requests # May not be needed anymore if api_utils is fully removed

@@ -1,0 +1,21 @@
+# Environment Variables
+**/*.env
+.env.sample
+
+# Virtual Environments
+env/
+
+# Logs
+logs/
+**/chroma_db
+**/*.db
+temp_uploads/
+
+# Python cache
+**/__pycache__/
+*.py[cod]
+
+# Package Info
+build/
+dist/
+**/*.egg-info
