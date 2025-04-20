@@ -85,31 +85,31 @@ def get_embedding_function(nomic_api_key: str, model: str, dimensionality: Optio
 
 
 @st.cache_resource(show_spinner="Connecting to vector store...")
-# --- CORRECTED TYPE HINT USING STRING FORWARD REFERENCE ---
-# Use the type hint for the actual embedding class name as a string
 def get_vector_store(_embedding_function: Optional['NomicEmbeddings']) -> Optional[Chroma]:
-    # --- END CORRECTION ---
-    """Initializes and returns the Chroma vector store object."""
     if _embedding_function is None:
         logger.error(
             "Cannot initialize vector store: Embedding function is None.")
         return None
-
-    logger.info(
-        "Cache miss or arguments changed. Initializing Chroma vectorstore...")
+    logger.info("Attempting Chroma initialization...")
     try:
         persist_directory = os.path.join(os.getcwd(), 'data', 'chroma_db')
-        logger.info(f"ChromaDB persist directory set to: {persist_directory}")
-        os.makedirs(persist_directory, exist_ok=True)
+        logger.info(f"Using persist directory: {persist_directory}")
+        if not os.path.exists(persist_directory):
+            os.makedirs(persist_directory)
+            logger.info("Created persist directory.")
 
+        logger.info("Calling Chroma constructor...")
         vs = Chroma(persist_directory=persist_directory,
                     embedding_function=_embedding_function)
-        logger.info("Chroma vectorstore initialized successfully.")
+        logger.info("Chroma constructor finished.")
+        # Test if collection exists (might indicate success)
+        logger.info(
+            f"Chroma collection name: {vs._collection.name if hasattr(vs, '_collection') else 'N/A'}")
         return vs
     except Exception as chroma_e:
-        error_details = CustomException(chroma_e, sys)
+        # Log error details
         logger.error(
-            f"Failed to initialize Chroma vectorstore: {error_details}", exc_info=True)
+            f"Failed during Chroma initialization: {chroma_e}", exc_info=True)
         st.error(f"Failed to initialize Vector Store: {chroma_e}")
         return None
 
